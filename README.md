@@ -1,6 +1,6 @@
 # cqrs-es-examples
 
-Examples of CQRS/Event Sourcing and GraphQL implemented
+Examples of CQRS/Event Sourcing and GraphQL implemented. This example is class-based, not actor-model based.
 
 - [Rust Version](https://github.com/j5ik2o/cqrs-es-example-rs)
 - [Go Version](https://github.com/j5ik2o/cqrs-es-example-go)
