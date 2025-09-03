@@ -6,5 +6,6 @@ Examples of CQRS/Event Sourcing and GraphQL implemented. This example is class-b
 - [Go Version](https://github.com/j5ik2o/cqrs-es-example-go)
 - [TypeScript Version](https://github.com/j5ik2o/cqrs-es-example-js)
 - [Java Version](https://github.com/j5ik2o/cqrs-es-example-java)
+- [PHP Version](https://github.com/akinoriakatsuka/cqrs-es-example-php)
 
 [CQRS/Event Sourcing System Developers Guide](https://github.com/j5ik2o/cqrs-es-example/wiki)
