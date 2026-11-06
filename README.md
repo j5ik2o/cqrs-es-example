@@ -8,4 +8,6 @@ Examples of CQRS/Event Sourcing and GraphQL implemented. This example is class-b
 - [Java Version](https://github.com/j5ik2o/cqrs-es-example-java)
 - [PHP Version](https://github.com/akinoriakatsuka/cqrs-es-example-php)
 
+Cross-language acceptance criteria are documented in [docs/acceptance-criteria.md](docs/acceptance-criteria.md).
+
 [CQRS/Event Sourcing System Developers Guide](https://github.com/j5ik2o/cqrs-es-example/wiki)
