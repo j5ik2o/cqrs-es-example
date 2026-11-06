@@ -52,7 +52,7 @@ Client
 
 ### 2.2 3 つのアプリケーションの責務
 
-**Write API Server** は GraphQL の Mutation だけを公開する。入力を受け取り、ドメインのコマンドを実行し、ESA を使ってイベントとスナップショットを保存する。集約の復元は ESA に任せる。リードモデルは読まない。
+**Write API Server** は GraphQL の Mutation と `healthCheck` Query を公開する。入力を受け取り、ドメインのコマンドを実行し、ESA を使ってイベントとスナップショットを保存する。集約の復元は ESA に任せる。リードモデルは読まない。
 
 **Read API Server** は GraphQL の Query だけを公開する。MySQL のリードモデルだけを読み、DynamoDB の journal、snapshot、head は読まない。`userAccountId` を受け取り、そのアカウントが閲覧できるデータだけを返す。
 
