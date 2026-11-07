@@ -135,6 +135,8 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 ## 5. 判断待ち
 
 - **rs #591（mysql v26）**: 変更が `tools/docker-compose/docker-compose-databases.yml` のみで、ci.yml の `paths-ignore: tools/**` により CI が走らない。healthcheck は `mysqladmin ping` に修正済み（ローカルで healthy 確認）だが未 push。`paths-ignore` を #591 に含めるか、admin merge か、加藤さんの判断待ち。判断まで push・paths-ignore 変更はしない。
+  - **paths-ignore を変更する場合**: #591 に ci.yml の `tools/**` 除外解除と healthcheck 修正を含めて push し、CI を実行して全緑を確認してから通常マージする。
+  - **admin merge の場合**: healthcheck 修正を push しても `tools/**` の paths-ignore で CI は起動しない。**CI を待たない**。ローカル検証（`mysqladmin ping` で healthy、必要な e2e）を記録し、加藤さんの明示承認を得て admin merge する。
 - **設計判断（実装は止めない。PR で論点として報告）**
   - RMU のリトライ上限
   - DLQ の要否・方式
@@ -172,7 +174,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 ## 7. 次にやること
 
 1. **go**: #668（Read API）と #669（RMU head Streams）は完了。**#679（e2e 仕上げ）の CI 結果を待ち、全緑・未対応コメント 0 ならマージ**。その後 #671（Renovate 整理）。go の M2 実装（ESA / Write / Read / RMU）は完了済み。
-2. **rs**: #591 は paths-ignore `tools/**` の判断待ち。判断後に healthcheck 修正（`mysqladmin ping`）を push して CI を通す。open PR を減らして WIP 3 以下にし、その後 #547 Write → #548 Read → #549 RMU（head Streams 条件）→ #550 e2e → #551 Renovate。#582（FAILURE）は触らない。
+2. **rs**: #591 は paths-ignore `tools/**` の判断待ち。paths-ignore 変更なら ci.yml + healthcheck を push して CI 全緑後に通常マージ、admin merge なら push 後に CI を待たず、ローカル検証と加藤さんの承認でマージする。open PR を減らして WIP 3 以下にし、その後 #547 Write → #548 Read → #549 RMU（head Streams 条件）→ #550 e2e → #551 Renovate。#582（FAILURE）は触らない。
 3. **js**: open PR を減らして WIP 3 以下にする。その後 #825 ESA 更新 → #826 Write → #827 Read → #828 RMU（head Streams）→ #829 e2e → #830 Renovate。
 4. **java**: open PR を減らして WIP 3 以下にする。その後 #583 ESA 更新 → #584 Write → #585 Read → #586 RMU（head Streams）→ #587 e2e → #588 Renovate。
 5. **kotlin M3**: java M2（特に v5 版の骨格）完了後に #1 → #2 → #3。
