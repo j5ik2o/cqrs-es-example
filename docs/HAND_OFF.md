@@ -15,7 +15,7 @@
 - **M0 受け入れ基準**: 完了（ハブ PR #6、設計判断 a〜k 確定）。
 - **M1 赤 CI 修正**: 完了（go #673、java #589 をマージし、main CI 緑）。
 - **M2 ESA v5 移行**: 進行中。**go は完了**（ESA #675 / Write #676 / Read #677 / RMU #678 / e2e #679 / mysql v26 #573 をマージし、#670・#671 をクローズ。go repo の M2 マイルストーンも closed、open PR 0）。**rs / js / java** は ESA 更新以外の M2 実装が未着手（WIP 超過のため既存 PR の消化待ち）。依存更新 PR のマージだけでは完了しない（下記の head Streams 条件を参照）。
-- **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機。
+- **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機。**この停止中の方針は acceptance-criteria §10.h（patch 自動マージ、minor/major 手動）より優先する。**
 - **M3 Kotlin**: 未着手。**java の v5 版が骨格**のため、java M2 完了待ち。
 - **M4 Scala**: **完了**（scala #5 / #6 / #7 をマージ、issue #2 / #3 / #4 とマイルストーンをクローズ）。#3 は PR #7 の再確認で M2 5 条件を満たすことを確認して再クローズ済み（追加 PR なし）。
 
@@ -131,9 +131,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 ## 5. 判断待ち
 
-- **rs #591（mysql v26）**: 変更が `tools/docker-compose/docker-compose-databases.yml` のみで、ci.yml の `paths-ignore: tools/**` により CI が走らない。healthcheck は `mysqladmin ping` に修正済み（ローカルで healthy 確認）だが未 push。`paths-ignore` を #591 に含めるか、admin merge か、加藤さんの判断待ち。判断まで push・paths-ignore 変更はしない。
-  - **paths-ignore を変更する場合**: #591 に ci.yml の `tools/**` 除外解除と healthcheck 修正を含めて push し、CI を実行して全緑を確認してから通常マージする。
-  - **admin merge の場合**: healthcheck 修正を push しても `tools/**` の paths-ignore で CI は起動しない。**CI を待たない**。ローカル検証（`mysqladmin ping` で healthy、必要な e2e）を記録し、加藤さんの明示承認を得て admin merge する。
+- **rs #591（mysql v26）**: Renovate PR。変更が `tools/docker-compose/docker-compose-databases.yml` のみで、ci.yml の `paths-ignore: tools/**` により CI が走らない。healthcheck のローカル修正（`mysqladmin ping`）と commit `20707fc` は保持するが、**Renovate 停止中は push・paths-ignore 変更・admin merge をしない**。進めるには加藤さんによる明示的な方針変更が必要。マージは Renovate 停止方針（Grok Bot が CI 全緑＋未対応コメントなしのみ）に従う。#592 の `local.rs` も未コミットのまま保持する。
 - **設計判断（実装は止めない。PR で論点として報告）**
   - RMU のリトライ上限
   - DLQ の要否・方式
@@ -148,7 +146,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 ## 6. 加藤さんの決定・禁止事項
 
 - **WIP は repo ごと**: 開いている PR は 1 repo 3 本まで（ドラフト含む）。作業者は 1 repo 1 本。repo が違えば並行可。**新規 PR を作る前に、その repo の open PR を 2 本以下にしておく**（3 本のまま新規 PR を出すと上限超過）。
-- **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機する。
+- **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機する。**この停止中の方針は acceptance-criteria §10.h（patch 自動マージ、minor/major 手動）より優先する。**
 - **Bugbot 確認必須**: Bugbot / CodeRabbit の未解決スレ・未対応コメントがある PR はマージしない。Codex の usage limit と CodeRabbit の rate-limit のコメントは指摘扱いしない。
 - **M2 完了条件**: 上記 2 章の head Streams 条件を満たすこと。依存更新 PR のマージだけでは完了にしない。
 - **禁止**:
@@ -171,7 +169,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 ## 7. 次にやること
 
 1. **go**: **M2 完了**。#675〜#679 と #573（mysql v26）をマージし、#666〜#671 をクローズ、M2 マイルストーンも closed、open PR 0。残りは #672（staticcheck の既存指摘、M1 後続）のみ。
-2. **rs**: #591 は paths-ignore `tools/**` の判断待ち。#597/#590/#592 などの Renovate PR は**修正・整理・close しない**。ローカルの未 push 変更（#591 の `20707fc`、#592 の `local.rs`）は保持。加藤さんの判断があるまで待機。
+2. **rs**: open 5 はすべて Renovate。停止方針に従い修正・整理・close しない。#591 は加藤さんの判断待ちで、進めるには明示的な方針変更が必要。ローカルの未 push 変更（#591 の `20707fc`、#592 の `local.rs`）は保持。
 3. **js**: open 3 はすべて Renovate。修正・整理せず、Grok Bot の CI 緑マージのみ待つ。
 4. **java**: open 3 はすべて Renovate。同上。
 5. **kotlin M3**: java M2（特に v5 版の骨格）完了後に #1 → #2 → #3。
@@ -194,3 +192,4 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - 2026-11-07 18:52 JST: go #679 マージ（`4fb791cd`）と #670 クローズを反映。M2 go の残りは #671（Renovate 整理、トリアージ中）。WIP は go 1 / java 4 / js 4 / rs 5。
 - 2026-11-07 19:20 JST: go #573（mysql v26）マージ（`00067bda`）と #671 クローズ、go M2 マイルストーン closed を反映。go の M2 完了（open PR 0）。
 - 2026-11-07 19:46 JST: Renovate off（19:33 加藤さん決定）を反映。java #400 / js #815 のマージ、WIP go 0 / java 3 / js 3 / rs 5、Renovate PR の修正・整理・close 禁止と Grok Bot マージ方針を明記。
+- 2026-11-07 19:54 JST: CodeRabbit 指摘（停止方針が acceptance-criteria §10.h より優先すること、rs #591 の旧手順を削除して明示的な方針変更が必要とすること）を反映。
