@@ -1,6 +1,6 @@
 # cqrs-es-example 群 引継ぎ（HAND_OFF）
 
-最終更新: **2026-11-07 16:15 JST**
+最終更新: **2026-11-07 17:37 JST**
 更新担当: cqrs-es coordinator（Orca）
 この文書は、担当者がコンテキストやレート制限で交代しても、次の担当がこの 1 枚で引き継げるようにするためのものです。実装の詳細は各 repo の issue / PR と `docs/acceptance-criteria.md` を参照してください。
 
@@ -14,9 +14,9 @@
 
 - **M0 受け入れ基準**: 完了（ハブ PR #6、設計判断 a〜k 確定）。
 - **M1 赤 CI 修正**: 完了（go #673、java #589 をマージし、main CI 緑）。
-- **M2 ESA v5 移行**: 進行中（rs / js / java / go）。**依存更新 PR のマージだけでは完了しない**（下記の head Streams 条件を参照）。
+- **M2 ESA v5 移行**: 進行中。**go** は ESA 更新（#675）・Write API（#676）・Read API（#677）・RMU head Streams/e2e（#678）まで完了し、残りは #670（e2e 仕上げ）と #671（Renovate 整理）。**rs / js / java** は ESA 更新以外の M2 実装が未着手（WIP 超過のため既存 PR の消化待ち）。依存更新 PR のマージだけでは完了しない（下記の head Streams 条件を参照）。
 - **M3 Kotlin**: 未着手。**java の v5 版が骨格**のため、java M2 完了待ち。
-- **M4 Scala**: **完了**（scala #5 / #6 / #7 をマージ、issue #2 / #3 / #4 とマイルストーンをクローズ）。
+- **M4 Scala**: **完了**（scala #5 / #6 / #7 をマージ、issue #2 / #3 / #4 とマイルストーンをクローズ）。#3 は PR #7 の再確認で M2 5 条件を満たすことを確認して再クローズ済み（追加 PR なし）。
 
 ## 2. マイルストーンと完了条件
 
@@ -58,12 +58,10 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - open PR:
   - #573 Renovate mysql Docker tag v26（e2e FAILURE。原因は mysql 26.10 の healthcheck `mysql -e "quit"` が ERROR 1064。原因・最小修正案をコメント済み。**マージ・クローズしない**） https://github.com/j5ik2o/cqrs-es-example-go/pull/573
 - open issue:
-  - #668 [M2] Read API を v5 に適合させる（**作業中**） https://github.com/j5ik2o/cqrs-es-example-go/issues/668
-  - #669 [M2] Read Model Updater を v5 に適合させる（**head Streams 条件**） https://github.com/j5ik2o/cqrs-es-example-go/issues/669
   - #670 [M2] docker-compose + LocalStack の e2e を整える https://github.com/j5ik2o/cqrs-es-example-go/issues/670
   - #671 [M2] Renovate PR を整理する https://github.com/j5ik2o/cqrs-es-example-go/issues/671
   - #672 [M1 後続] staticcheck の既存指摘 41 件 https://github.com/j5ik2o/cqrs-es-example-go/issues/672
-- 補足: #666（ESA v5.1.0 更新）と #667（Write API）は完了・クローズ済み。
+- 補足: #666（ESA v5.1.0 更新）・#667（Write API）・#668（Read API）・#669（RMU head Streams）は完了・クローズ済み。
 
 ### java `j5ik2o/cqrs-es-example-java`
 
@@ -101,7 +99,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 ### rs `j5ik2o/cqrs-es-example-rs`
 
 - open PR（WIP 5、超過）:
-  - #593 downcast-rs v2 https://github.com/j5ik2o/cqrs-es-example-rs/pull/593
+  - #595（Renovate） https://github.com/j5ik2o/cqrs-es-example-rs/pull/595
   - #592 aws_lambda_events v1 https://github.com/j5ik2o/cqrs-es-example-rs/pull/592
   - #591 mysql v26 https://github.com/j5ik2o/cqrs-es-example-rs/pull/591
   - #590 Helm mysql v14 https://github.com/j5ik2o/cqrs-es-example-rs/pull/590
@@ -131,14 +129,9 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 ## 4. 作業中の Orca 端末・worktree・担当 issue
 
-- **go #668（Read API v5）**
-  - worktree: `m2-go-read-api`（`/Users/j5ik2o/orca/workspaces/cqrs-es-example-go/m2-go-read-api`）
-  - worker terminal: `term_dd421d56-0a46-453f-a951-d060272b691b`
-  - task: `task_d452ad13ba89`
-  - 起動コマンド: `ollama launch claude --model deepseek-v4.1-flash:cloud -- --dangerously-skip-permissions`
-- ほかに稼働中の worker はいない。
+- 稼働中の worker はいない。go #668/#669、scala #5/#6/#7、scala #3 検証は完了済み。
 - 端末上限対応で idle シェルを閉じた: scala main `term_6aee73dd`、hub `term_4f1d95f0`。
-- 完了済み worker の端末は指示により close せず orphaned のまま: `term_18bfc47d`（go #667）、`term_f28d70c0`（scala #7）。
+- 完了済み worker の端末は指示により close せず orphaned のまま: `term_18bfc47d`（go #667）、`term_dd421d56`（go #668）、`term_7d24356a`（go #669）、`term_f28d70c0`（scala #7）、`term_21227747`（scala #3 検証）。
 
 ## 5. 判断待ち
 
@@ -165,7 +158,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - 他担当のコンテナ・画像・worktree・terminal の削除
   - 公開・リリース
   - force push / rebase（同期は `git merge origin/main` または GitHub の Update branch を使う）
-  - **PR #83 の再実装**（対象 repo は判断待ち。go #83 / java #83 / js #83 / rs #83 が存在するため、番号だけでは特定できない。加藤さんの指定を待つ）
+  - **PR #83 の再実装**（対象は j5ik2o/event-store-adapter（common）の https://github.com/j5ik2o/event-store-adapter/pull/83 のみ。go / java / js / rs の #83 ではない。**拒否済み・再開しない**）
   - ESA 本体 repo（event-store-adapter-*）の変更
 - **main への直 push 禁止**（PR 経由）。ただし HAND_OFF は下記の運用に従う。
 - **HAND_OFF の運用**:
@@ -178,7 +171,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 ## 7. 次にやること
 
-1. **go #668（進行中）**: Read API v5 適合。完了後に #669（RMU head Streams、M2 完了条件）→ #670（e2e）→ #671（Renovate 整理）。
+1. **go**: #668（Read API）と #669（RMU head Streams）は完了。次は #670（e2e 仕上げ）→ #671（Renovate 整理）。go の M2 実装（ESA / Write / Read / RMU）は完了済み。
 2. **rs**: open PR を減らして WIP 3 以下にする。その後 #547 Write → #548 Read → #549 RMU（head Streams 条件）→ #550 e2e → #551 Renovate。#582（FAILURE）は触らない。
 3. **js**: open PR を減らして WIP 3 以下にする。その後 #825 ESA 更新 → #826 Write → #827 Read → #828 RMU（head Streams）→ #829 e2e → #830 Renovate。
 4. **java**: open PR を減らして WIP 3 以下にする。その後 #583 ESA 更新 → #584 Write → #585 Read → #586 RMU（head Streams）→ #587 e2e → #588 Renovate。
@@ -197,3 +190,4 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 - 2026-11-07 16:10 JST: 初版。M0/M1/M4 完了、M2 進行中、M3 待ちの状態を記録。
 - 2026-11-07 16:15 JST: CodeRabbit 指摘（再同期の既定手順と未実装範囲、a〜k の確定参照、PR #83 の対象、新規 PR 用の WIP 枠）を反映。
+- 2026-11-07 17:37 JST: go #668/#669 完了、scala #3 の再確認・クローズ、PR #83 の対象を common repo に確定、open PR 一覧を更新。
