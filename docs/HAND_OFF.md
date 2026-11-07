@@ -16,7 +16,7 @@
 - **M1 赤 CI 修正**: 完了（go #673、java #589 をマージし、main CI 緑）。
 - **M2 ESA v5 移行**: go / java / js / rs の移行と復旧、および scala の復旧が main にマージ済み。go は #675〜#679 + 復旧 #681、java は #618〜#622 + 復旧 #624、js は #831〜#835 + 復旧 #837 + Lambda 起動時 Scan #841、rs は #598・#599・#601・#602 + 復旧 #603、scala は #5〜#7 + 復旧 #9。**M2 のコード完了条件は全言語で満たしている**。Renovate 整理 issue（java #588 / js #830 / rs #551）は停止方針により保留のため、各 M2 マイルストーンは open のまま。
 - **M2 復旧（A 案）**: 2026-11-07 23:37 加藤さん決定。M2 を「head Streams 移行」と「復旧（再試行・DLQ・再同期）」に分離し、復旧を言語ごとの issue で実装した。追跡のハブ #13 は全言語完了でクローズ済み。go #680 / java #623 / js #836 / rs #600 / kotlin #7 / scala #8 はすべてクローズ済み。
-- **M2 後続（本番適用・堅牢化）**: go #684 / java #627 / js #840 / rs #604 はすべて PR マージ済みでクローズ。残る実装作業は go #672（staticcheck の既存指摘 41 件、M1 後続）で着手中。
+- **M2 後続（本番適用・堅牢化）**: go #684 / java #627 / js #840 / rs #604 はすべて PR マージ済みでクローズ。作業中の実装 issue は go #672（staticcheck の既存指摘 41 件、M1 後続）。scala / kotlin には Lambda/SQS デプロイ資産が残る（作業中 issue ではない）。
 - **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機。**この停止中の方針は acceptance-criteria §10.h（patch 自動マージ、minor/major 手動）より優先する。**
 - **M3 Kotlin**: **完了**。#1（骨格 + command、PR #4）、#2（Read API + RMU、PR #5）、#3（compose + e2e + CI、PR #6）、復旧 A 案（PR #8）。issue #1〜#3・#7 とマイルストーン、ハブ #4 はクローズ済み。
 - **M4 Scala**: **完了**。scala #5 / #6 / #7 に加え、復旧 A 案（起動時 Scan・Trimmed 再同期・DLQ）を PR #9 でマージし、issue #8 をクローズ。
@@ -117,7 +117,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - open issue: 0
 - マージ済み: #4（骨格 + command + Write API、`f2564d72`）、#5（Read API + RMU、`461c6171`）、#6（compose + e2e + CI、`ea55da91`）、#8（復旧 A 案、`2ca6158b`）。issue #1〜#3・#7 はクローズ済み。
 - M3 マイルストーン: closed。
-- 残作業: SQS notifier / Lambda ハンドラ / AWS デプロイ資産、24 時間超停止の運用手順。
+- 残作業: SQS notifier / Lambda ハンドラ / AWS デプロイ資産、24 時間超停止の運用手順、起動時 Scan と購読の順序（現状は Scan 完了後に購読開始）。
 
 ## 4. 作業中の Orca 端末・worktree・担当 issue
 
@@ -134,9 +134,9 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - java #559（Gradle 9）
   - js #819 / #812 / #811
 - 設計判断 a〜k（M0）は **2026-11-06 に加藤さんが推奨どおり確定**。`docs/acceptance-criteria.md` §10 は「判断待ち」として列挙しているが、内容は確定済みとして読む。確定の記録はハブ issue #1 のコメントを参照: https://github.com/j5ik2o/cqrs-es-example/issues/1
-- 復旧の設計論点（リトライ上限、DLQ、24 時間超停止後の再同期）は **2026-11-07 23:37 に A 案で確定**。go / java / js / rs / kotlin / scala のすべてで実装・マージ済み。
+- 復旧の設計論点（リトライ上限、DLQ、24 時間超停止後の再同期）は **2026-11-07 23:37 に A 案で確定**。go / java / js / rs / kotlin / scala のすべてで実装・マージ済み。ただし、**kotlin と scala のローカル reader は Scan 完了後に購読を開始するため、再同期の完了条件は未達**。Scan が 24 時間以上かかると、Scan 済みの head への更新が購読開始前に保持期限を超え、反映漏れが生じる可能性がある（A 案の「先に購読を再開し、並行して Scan」と異なる）。
 - **js #840 の Lambda 起動時 Scan** は PR #841 で実装済み。M2 の完了条件を満たす。
-- **scala の DY-15 再同期** は PR #9 で実装済み。残るのは Lambda/SQS デプロイ資産と障害注入 e2e。
+- **scala の DY-15 再同期** は PR #9 で実装済み。残るのはローカル reader の購読再開と Scan の順序修正、Lambda/SQS デプロイ資産、障害注入 e2e。
 
 ## 6. 加藤さんの決定・禁止事項
 
@@ -190,4 +190,4 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - 2026-11-07 23:58 JST: java #618〜#622、js #831〜#835、rs #598・#599 のマージを反映。java #587 / js #829 クローズ、M2 復旧 A 案（hub #13、go #680 / java #623 / js #836 / rs #600）と 4 人の作業者を記録。rs #548 Read API を進行中に更新。
 - 2026-11-08 00:58 JST: rs #601（Read API）マージ（`f958c548`）と #602（e2e）CI 中を反映。M2 は復旧まで未完了であること、scala の DY-15 再同期が未実装であることを明記。DLQ を配送専用、復旧タスクを永続記録として役割分担し、再同期は購読再開→並行 Scan→journal 補完の順に修正。追加テスト（同時適用、位置行の同時作成、複数ページ Scan、退避先への書き込み失敗）を完了条件に追加。
 - 2026-11-08 04:00 JST: M2 復旧の全言語マージ（go #681 / java #624 / js #837 / rs #603）と e2e（rs #602）、本番適用資産（go #683 / java #626 / js #839）を反映。M2 後続を go #684 / java #627 / js #840 / rs #604 に整理。kotlin は #4 / #5 マージ済みで #3 を着手中。go / java の worktree は端末が残るため破棄保留。
-- 2026-11-08 06:55 JST: 全言語の復旧完了を反映（kotlin #8、scala #9、js #841、rs #605、go #685、java #629）。hub #13 / #4 と kotlin M3 マイルストーンをクローズ。M2 後続はすべて完了し、残る実装作業は go #672（staticcheck）のみ。マージ済み worktree を削除済み。
+- 2026-11-08 06:55 JST: 全言語の復旧完了を反映（kotlin #8、scala #9、js #841、rs #605、go #685、java #629）。hub #13 / #4 と kotlin M3 マイルストーンをクローズ。M2 後続はすべて完了し、残る実装 issue は go #672（staticcheck）のみ。scala / kotlin の Lambda/SQS デプロイ資産は残作業として区別して記載。kotlin / scala のローカル reader は Scan 完了後に購読を開始するため、24 時間超の Scan では反映漏れの可能性があることを明記。マージ済み worktree を削除済み。
