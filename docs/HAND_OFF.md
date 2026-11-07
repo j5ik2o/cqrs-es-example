@@ -67,7 +67,10 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 ### go `j5ik2o/cqrs-es-example-go`
 
 - open PR: 0（Renovate も 0）
-- open issue: 0
+- open issue（今回の M1/M2 作業対象は 0）:
+  - #32 Windows 11/WSL2 support https://github.com/j5ik2o/cqrs-es-example-go/issues/32
+  - #29 Implement deployment to AWS https://github.com/j5ik2o/cqrs-es-example-go/issues/29
+  - #7 Dependency Dashboard https://github.com/j5ik2o/cqrs-es-example-go/issues/7
 - 補足: #666〜#671・#680・#682・#684・#672 は完了・クローズ済み。PR #675〜#679・#573・#681（復旧）・#683（本番適用資産）・#685（定期実行・件数上限・監視）・#686（staticcheck 整理）はマージ済み。M2 マイルストーンは closed。
 - 判断待ち: `make lint`（staticcheck）を CI に追加するか。決まるまで着手しない。
 
@@ -117,7 +120,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - open issue: #10（Lambda/SQS デプロイ資産）— **作業中**
 - マージ済み: #4（骨格 + command + Write API、`f2564d72`）、#5（Read API + RMU、`461c6171`）、#6（compose + e2e + CI、`ea55da91`）、#8（復旧 A 案、`2ca6158b`）、#11（再同期順序、`5272c5c1`）。issue #1〜#3・#7・#9 はクローズ済み。
 - M3 マイルストーン: closed。
-- 残作業: Lambda/SQS デプロイ資産（#10、本番デプロイなし）、24 時間超停止の運用手順・アラート整備。
+- 残作業: Lambda/SQS デプロイ資産（#10、本番デプロイなし）、24 時間超停止の運用手順・アラート整備、**購読開始直後の Scan 中の Streams 読み取り停止**（下記 §5 を参照）。
 
 ## 4. 作業中の Orca 端末・worktree・担当 issue
 
@@ -136,6 +139,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - js #819 / #812 / #811
 - 設計判断 a〜k（M0）は **2026-11-06 に加藤さんが推奨どおり確定**。`docs/acceptance-criteria.md` §10 は「判断待ち」として列挙しているが、内容は確定済みとして読む。確定の記録はハブ issue #1 のコメントを参照: https://github.com/j5ik2o/cqrs-es-example/issues/1
 - 復旧の設計論点（リトライ上限、DLQ、24 時間超停止後の再同期）は **2026-11-07 23:37 に A 案で確定**。go / java / js / rs / kotlin / scala のすべてで実装・マージ済み。**kotlin / scala のローカル reader の再同期順序（購読再開→並行 Scan）も PR #11 / #12 で修正済み**。
+- **kotlin の残課題**: 購読スレッドの起動後、初回読み取りの成功を待たずに Scan が始まる。長時間の Scan 中に Streams の読み取りが 24 時間以上失敗すると、Scan 済み集約の更新が保持期限を超え、反映されない場合がある。Scan 完了時刻や後続レコードの読み取りにより、再 Scan も延期される。A 案の「購読再開→並行 Scan→journal 補完」を満たすが、この停止時間の扱いは残課題。
 - **js #840 の Lambda 起動時 Scan** は PR #841 で実装済み。M2 の完了条件を満たす。
 - **scala の DY-15 再同期** は PR #9、順序修正は PR #12 で実装済み。残るのは Lambda/SQS デプロイ資産（#11）と障害注入 e2e。
 - **go の CI に staticcheck を追加するか** は加藤さんの判断待ち。決まるまで着手しない。
@@ -194,3 +198,4 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - 2026-11-08 04:00 JST: M2 復旧の全言語マージ（go #681 / java #624 / js #837 / rs #603）と e2e（rs #602）、本番適用資産（go #683 / java #626 / js #839）を反映。M2 後続を go #684 / java #627 / js #840 / rs #604 に整理。kotlin は #4 / #5 マージ済みで #3 を着手中。go / java の worktree は端末が残るため破棄保留。
 - 2026-11-08 06:55 JST: 全言語の復旧完了を反映（kotlin #8、scala #9、js #841、rs #605、go #685、java #629）。hub #13 / #4 と kotlin M3 マイルストーンをクローズ。M2 後続はすべて完了し、残る実装 issue は go #672（staticcheck）のみ。scala / kotlin の Lambda/SQS デプロイ資産は残作業として区別して記載。kotlin / scala のローカル reader は Scan 完了後に購読を開始するため、24 時間超の Scan では反映漏れの可能性があることを明記。マージ済み worktree を削除済み。
 - 2026-11-08 08:05 JST: kotlin #11 / scala #12 の再同期順序修正、go #686（staticcheck）のマージを反映。ローカル reader の順序課題は解消済みに更新。kotlin #10 / scala #11 の Lambda/SQS デプロイ資産を着手中として記録。go の CI への staticcheck 追加は判断待ちとして明記。
+- 2026-11-08 08:20 JST: go の open issue（#32 / #29 / #7）を明記。kotlin の購読開始直後の Scan 中に Streams 読み取りが長時間止まった場合の残課題を §5 に追記。
