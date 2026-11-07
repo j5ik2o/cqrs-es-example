@@ -1,6 +1,6 @@
 # cqrs-es-example 群 引継ぎ（HAND_OFF）
 
-最終更新: **2026-11-07 16:10 JST**
+最終更新: **2026-11-07 16:15 JST**
 更新担当: cqrs-es coordinator（Orca）
 この文書は、担当者がコンテキストやレート制限で交代しても、次の担当がこの 1 枚で引き継げるようにするためのものです。実装の詳細は各 repo の issue / PR と `docs/acceptance-criteria.md` を参照してください。
 
@@ -146,15 +146,17 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - RMU のリトライ上限
   - DLQ の要否・方式
   - 24 時間を超えて RMU が止まったときの再同期手順
+    - 既定手順（DY-15）: Streams の保持期間を超えたら、Streams を再開しつつ `head` を走査する。各集約の `head.seq_nr` と `read_model_positions` を比較し、不足分を journal から取得して冪等に適用し、位置を同一 DB トランザクションで更新する。
+    - 現状: Scala PR #7 を含め、この head 走査・再同期は**未実装**。停止中に更新された集約は、再同期するまでリードモデルに反映されない可能性がある。実装先は各言語の RMU issue（rs #549 / go #669 / java #586 / js #828）。Scala は #3 を完了済みだが、再同期は残作業。
 - **close 候補（勝手に close しない。加藤さんの判断待ち）**
   - java #559（Gradle 9）/ #400（localstack 4）
   - js #824 / #823 / #819 / #815 / #812 / #811
   - go #573（mysql v26。切り分けコメント済み）
-- 設計判断 a〜k（M0）は確定済み。`docs/acceptance-criteria.md` を参照。
+- 設計判断 a〜k（M0）は **2026-11-06 に加藤さんが推奨どおり確定**。`docs/acceptance-criteria.md` §10 は「判断待ち」として列挙しているが、内容は確定済みとして読む。確定の記録はハブ issue #1 のコメントを参照: https://github.com/j5ik2o/cqrs-es-example/issues/1
 
 ## 6. 加藤さんの決定・禁止事項
 
-- **WIP は repo ごと**: 開いている PR は 1 repo 3 本まで（ドラフト含む）。作業者は 1 repo 1 本。repo が違えば並行可。
+- **WIP は repo ごと**: 開いている PR は 1 repo 3 本まで（ドラフト含む）。作業者は 1 repo 1 本。repo が違えば並行可。**新規 PR を作る前に、その repo の open PR を 2 本以下にしておく**（3 本のまま新規 PR を出すと上限超過）。
 - **Bugbot 確認必須**: Bugbot / CodeRabbit の未解決スレ・未対応コメントがある PR はマージしない。Codex の usage limit と CodeRabbit の rate-limit のコメントは指摘扱いしない。
 - **M2 完了条件**: 上記 2 章の head Streams 条件を満たすこと。依存更新 PR のマージだけでは完了にしない。
 - **禁止**:
@@ -163,7 +165,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - 他担当のコンテナ・画像・worktree・terminal の削除
   - 公開・リリース
   - force push / rebase（同期は `git merge origin/main` または GitHub の Update branch を使う）
-  - **PR #83 の再実装**
+  - **PR #83 の再実装**（対象 repo は判断待ち。go #83 / java #83 / js #83 / rs #83 が存在するため、番号だけでは特定できない。加藤さんの指定を待つ）
   - ESA 本体 repo（event-store-adapter-*）の変更
 - **main への直 push 禁止**（PR 経由）。ただし HAND_OFF は下記の運用に従う。
 - **HAND_OFF の運用**:
@@ -194,3 +196,4 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 ## 更新履歴
 
 - 2026-11-07 16:10 JST: 初版。M0/M1/M4 完了、M2 進行中、M3 待ちの状態を記録。
+- 2026-11-07 16:15 JST: CodeRabbit 指摘（再同期の既定手順と未実装範囲、a〜k の確定参照、PR #83 の対象、新規 PR 用の WIP 枠）を反映。
