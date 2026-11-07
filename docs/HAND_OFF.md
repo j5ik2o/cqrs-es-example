@@ -1,6 +1,6 @@
 # cqrs-es-example 群 引継ぎ（HAND_OFF）
 
-最終更新: **2026-11-07 23:58 JST**
+最終更新: **2026-11-08 00:58 JST**
 更新担当: cqrs-es coordinator（Orca）
 この文書は、担当者がコンテキストやレート制限で交代しても、次の担当がこの 1 枚で引き継げるようにするためのものです。実装の詳細は各 repo の issue / PR と `docs/acceptance-criteria.md` を参照してください。
 
@@ -14,7 +14,7 @@
 
 - **M0 受け入れ基準**: 完了（ハブ PR #6、設計判断 a〜k 確定）。
 - **M1 赤 CI 修正**: 完了（go #673、java #589 をマージし、main CI 緑）。
-- **M2 ESA v5 移行**: 移行本体は go / java / js / rs / scala で完了。**go は M2 完了**。java は #618〜#622 で ESA v5・Write/Read/RMU・e2e まで main に反映済み。js は #831〜#835 で同じ範囲が完了。rs は #598（RMU）・#599（Write API）まで完了し、**#548 Read API が進行中**、#550 e2e が残り。scala は M4 として完了。
+- **M2 ESA v5 移行**: 移行本体は go / java / js / rs で main に反映済み。ただし **M2 はどの言語もまだ完了ではない**（復旧が残る）。go は #675〜#679 完了だが **#680 復旧が作業中**。java は #618〜#622 完了で **#623 復旧の PR #624 がレビュー対応中**。js は #831〜#835 完了で **#836 復旧の PR #837 がレビュー対応中**。rs は #598（RMU）・#599（Write API）・#601（Read API）完了で、**#550 e2e の PR #602 が CI 中**、#600 復旧が未着手。scala は M4 として移行完了だが、**DY-15 の再同期（head Scan）が未実装**で、復旧の追跡先は未定（決まり次第ここに追記する）。
 - **M2 復旧（A 案）**: 2026-11-07 23:37 加藤さん決定。M2 を「head Streams 移行」と「復旧（再試行・DLQ・再同期）」に分離し、復旧を言語ごとの issue で実装する。追跡はハブ #13。go #680 / java #623 / js #836 / rs #600。
 - **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機。**この停止中の方針は acceptance-criteria §10.h（patch 自動マージ、minor/major 手動）より優先する。**
 - **M3 Kotlin**: 未着手。**java の v5 版が骨格**のため、java M2（復旧を含む）の完了待ち。
@@ -38,11 +38,11 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 ### M2 復旧の確定仕様（A 案・2026-11-07 23:37 加藤さん決定）
 
 1. **再試行**: 回数上限と最大経過時間を設け、超えたら指数バックオフで退避する。Lambda は `BisectBatchOnFunctionError` を有効化し、必要なら `ReportBatchItemFailures` も使う。ローカル reader は指数バックオフ + ジッタ。
-2. **DLQ**: 失敗イベントを DLQ に永続化し、集約 ID / seq_nr / 失敗種別 / 集約情報を記録する。復旧タスクが DLQ を読み、journal から該当イベントを読み直して冪等に再適用する。
-3. **再同期（DY-15）**: 24 時間を超えて止まった場合は head を ConsistentRead で全件 Scan する。`TrimmedDataAccessException` も全再同期。`ExpiredIteratorException` はシャードごとに再開。起動時も全件 Scan を行う。
+2. **永続復旧タスクと DLQ**: 失敗時は、ストア識別子・投影名・版・集約 ID・seq_nr・失敗種別を含む**永続復旧タスク**を記録する（これが復旧の正）。SQS / DLQ は配送専用であり、メッセージ保持期限に依存しない。復旧タスクは journal から該当イベントを読み直して冪等に再適用する。
+3. **再同期（DY-15）**: 24 時間を超えて止まった場合や `TrimmedDataAccessException` では、**先に Streams の購読を再開**し、並行して head を ConsistentRead で全ページ Scan する。Scan 中の更新は journal から補完し、各集約の `head.seq_nr` と `read_model_positions` の差を冪等に適用する。`ExpiredIteratorException` はシャードごとに再開する。起動時も同じ手順で全件 Scan を行う。
 4. **トランザクション**: 1 イベント、または上限つき範囲を 1 トランザクションで処理する。位置行とリードモデル更新は同一 TX。適用は「現在位置 + 1」のみ。ロック / 条件更新を使い、journal に欠番があれば位置を進めずに失敗させる。
 5. **冪等性**: 同じイベントを何度適用しても結果が変わらないこと。
-6. **テスト（7 本）**: 重複破棄、逆順破棄、欠番の journal 補完、バッチ途中失敗からの再試行、再起動後の再開、リトライ上限超過 → DLQ → DLQ 復旧、24h 超え全再同期 / TrimmedDataAccess / ExpiredIterator。
+6. **テスト**: 必須 7 本（重複破棄、逆順破棄、欠番の journal 補完、バッチ途中失敗からの再試行、再起動後の再開、リトライ上限超過 → 永続復旧タスク → 復旧、24h 超え全再同期 / TrimmedDataAccess / ExpiredIterator）に加え、ハブ #13 が要求する追加テスト（同時適用、位置行の同時作成、複数ページ Scan、退避先への書き込み失敗）も M2 完了条件に含める。7 本だけでは完了としない。
 
 ### M3 Kotlin
 
@@ -80,7 +80,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - #559 Gradle 9（close 候補） https://github.com/j5ik2o/cqrs-es-example-java/pull/559
 - マージ済み（M2）: #618（ESA v5.1.0 / 3 テーブル）、#619（Write API）、#620（Read API）、#621（RMU head Streams）、#622（e2e）。issue #583〜#587 はクローズ済み。
 - open issue:
-  - #623 [M2] RMU の復旧（再試行・DLQ・再同期） https://github.com/j5ik2o/cqrs-es-example-java/issues/623 — **作業中**
+  - #623 [M2] RMU の復旧（再試行・DLQ・再同期） https://github.com/j5ik2o/cqrs-es-example-java/issues/623 — **PR #624 が CodeRabbit 未解決 18 本を対応中**
   - #588 [M2] Renovate PR を整理 https://github.com/j5ik2o/cqrs-es-example-java/issues/588
 
 ### js `j5ik2o/cqrs-es-example-js`
@@ -91,7 +91,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - #811 yargs v18 https://github.com/j5ik2o/cqrs-es-example-js/pull/811
 - マージ済み（M2）: #831（ESA v5.2.0）、#832（Write API）、#833（Read API）、#834（RMU head Streams）、#835（e2e）。issue #825〜#829 はクローズ済み（#829 は加藤さん承認のうえクローズ）。
 - open issue:
-  - #836 [M2] RMU の復旧（再試行・DLQ・再同期） https://github.com/j5ik2o/cqrs-es-example-js/issues/836 — **作業中**
+  - #836 [M2] RMU の復旧（再試行・DLQ・再同期） https://github.com/j5ik2o/cqrs-es-example-js/issues/836 — **PR #837 が CodeRabbit 未解決 2 本を対応中**
   - #830 [M2] Renovate 整理 https://github.com/j5ik2o/cqrs-es-example-js/issues/830
 
 ### rs `j5ik2o/cqrs-es-example-rs`
@@ -102,11 +102,10 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - #591 mysql v26 https://github.com/j5ik2o/cqrs-es-example-rs/pull/591
   - #590 Helm mysql v14 https://github.com/j5ik2o/cqrs-es-example-rs/pull/590
   - #582 sqlx 0.9 https://github.com/j5ik2o/cqrs-es-example-rs/pull/582
-- マージ済み（M2）: #598（RMU head Streams）、#599（Write API）。
+- マージ済み（M2）: #598（RMU head Streams）、#599（Write API）、#601（Read API、`f958c548`）。
 - open issue:
-  - #548 [M2] Read API を v5 に適合 https://github.com/j5ik2o/cqrs-es-example-rs/issues/548 — **作業中**
-  - #550 [M2] compose + e2e https://github.com/j5ik2o/cqrs-es-example-rs/issues/550
-  - #600 [M2] RMU の復旧（再試行・DLQ・再同期） https://github.com/j5ik2o/cqrs-es-example-rs/issues/600
+  - #550 [M2] compose + e2e https://github.com/j5ik2o/cqrs-es-example-rs/issues/550 — **PR #602 が CI 中**
+  - #600 [M2] RMU の復旧（再試行・DLQ・再同期） https://github.com/j5ik2o/cqrs-es-example-rs/issues/600 — **未着手（#550 の後）**
   - #551 [M2] Renovate 整理 https://github.com/j5ik2o/cqrs-es-example-rs/issues/551
 
 ### scala `j5ik2o/cqrs-es-example-scala`
@@ -167,10 +166,10 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 ## 7. 次にやること
 
-1. **go**: 復旧 #680 を完了させる（worker 稼働中）。完了後、go の M2 復旧条件を確認してクローズ。
-2. **java**: 復旧 #623 を完了させる（worker 稼働中）。java M2 が完了したら kotlin M3 の骨格に着手できる。
-3. **js**: 復旧 #836 を完了させる（worker 稼働中）。
-4. **rs**: #548 Read API を完了させ、次に #550 e2e、#600 復旧の順。
+1. **go**: 復旧 #680 の PR #681 の CI を確認し、緑・未解決 0 でマージ待ちにする（worker 稼働中）。
+2. **java**: 復旧 #623 の PR #624 で CodeRabbit 未解決 18 本を修正または理由つき resolve させる（worker 対応中）。完了後、java M2 が完了したら kotlin M3 の骨格に着手できる。
+3. **js**: 復旧 #836 の PR #837 で CodeRabbit 未解決 2 本を修正または理由つき resolve させる（worker 対応中）。
+4. **rs**: #550 e2e の PR #602 の CI を確認してマージ待ちにし、その後 #600 復旧に着手する。
 5. **kotlin M3**: java M2（復旧を含む）完了後に #1 → #2 → #3。
 6. **HAND_OFF**: 最長 1 時間おき、およびマイルストーン完了・方針変更時に更新。
 7. **Renovate**: 停止中。既存 PR は触らず、Grok Bot のマージ判断のみ待つ。
@@ -193,3 +192,4 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - 2026-11-07 19:46 JST: Renovate off（19:33 加藤さん決定）を反映。java #400 / js #815 のマージ、WIP go 0 / java 3 / js 3 / rs 5、Renovate PR の修正・整理・close 禁止と Grok Bot マージ方針を明記。
 - 2026-11-07 19:54 JST: CodeRabbit 指摘（停止方針が acceptance-criteria §10.h より優先すること、rs #591 の旧手順を削除して明示的な方針変更が必要とすること）を反映。
 - 2026-11-07 23:58 JST: java #618〜#622、js #831〜#835、rs #598・#599 のマージを反映。java #587 / js #829 クローズ、M2 復旧 A 案（hub #13、go #680 / java #623 / js #836 / rs #600）と 4 人の作業者を記録。rs #548 Read API を進行中に更新。
+- 2026-11-08 00:58 JST: rs #601（Read API）マージ（`f958c548`）と #602（e2e）CI 中を反映。M2 は復旧まで未完了であること、scala の DY-15 再同期が未実装であることを明記。DLQ を配送専用、復旧タスクを永続記録として役割分担し、再同期は購読再開→並行 Scan→journal 補完の順に修正。追加テスト（同時適用、位置行の同時作成、複数ページ Scan、退避先への書き込み失敗）を完了条件に追加。
