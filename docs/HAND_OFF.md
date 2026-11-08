@@ -1,6 +1,6 @@
 # cqrs-es-example 群 引継ぎ（HAND_OFF）
 
-最終更新: **2026-11-08 09:40 JST**
+最終更新: **2026-11-08 12:10 JST**
 更新担当: cqrs-es coordinator（Orca）
 この文書は、担当者がコンテキストやレート制限で交代しても、次の担当がこの 1 枚で引き継げるようにするためのものです。実装の詳細は各 repo の issue / PR と `docs/acceptance-criteria.md` を参照してください。
 
@@ -16,10 +16,12 @@
 - **M1 赤 CI 修正**: 完了（go #673、java #589 をマージし、main CI 緑）。後続の go #672（staticcheck 整理）と #687（lint ジョブへの staticcheck v0.8.2 追加）も完了。
 - **M2 ESA v5 移行**: go / java / js / rs の移行と復旧、scala の復旧、kotlin / scala の再同期順序修正が main にマージ済み。go は #675〜#679 + 復旧 #681、java は #618〜#622 + 復旧 #624、js は #831〜#835 + 復旧 #837 + Lambda 起動時 Scan #841、rs は #598・#599・#601・#602 + 復旧 #603、kotlin は #4〜#6 + 復旧 #8 + 順序修正 #11、scala は #5〜#7 + 復旧 #9 + 順序修正 #12。**M2 のコード完了条件は全言語で満たしている**。Renovate 整理 issue（java #588 / js #830 / rs #551）は停止方針により保留のため、各 M2 マイルストーンは open のまま。
 - **M2 復旧（A 案）**: 2026-11-07 23:37 加藤さん決定。M2 を「head Streams 移行」と「復旧（再試行・DLQ・再同期）」に分離し、復旧を言語ごとの issue で実装した。追跡のハブ #13 は全言語完了でクローズ済み。go #680 / java #623 / js #836 / rs #600 / kotlin #7 / scala #8 はすべてクローズ済み。
-- **M2 後続（本番適用・堅牢化）**: go #684 / java #627 / js #840 / rs #604 / go #672（staticcheck）/ kotlin #10 / scala #11 はすべて PR マージ済みでクローズ。**実装系の残作業はない**。実 AWS デプロイ、Secrets Manager、SNS 通知先、アラート通知先などの運用設定のみが残る（本番デプロイはオーナー承認が必要）。go の CI lint への staticcheck 追加は加藤さん決定（v0.8.2 固定）に沿って PR #687 で完了。
+- **M2 後続（本番適用・堅牢化）**: go #684 / java #627 / js #840 / rs #604 / go #672（staticcheck）/ kotlin #10 / scala #11 はすべて PR マージ済みでクローズ。go #29（ローカルのコンテナ検証まで）も PR #688 で完了しクローズ。**go #689 の PR #690 と kotlin #19 の PR #20 は CI・レビュー確認とマージ待ち**。それ以外の実装系の残作業はない。実 AWS デプロイ、Secrets Manager、SNS 通知先、アラート通知先などの運用設定が残る（本番デプロイはオーナー承認が必要）。go の CI lint への staticcheck 追加は加藤さん決定（v0.8.2 固定）に沿って PR #687 で完了。
+- **BIGINT 化（T-9）**: js PR #843（`6dadc460`）と scala PR #18（`820fa1d9`）で、`last_processed_sequence_number` を 4 テーブルとも BIGINT NOT NULL に拡張。migration 5、down の注意、T-9 上限検査、境界テストを実装済み。
+- **Lambda 配布物サイズ計測**: java PR #631、kotlin PR #18、scala PR #19 で計測と CI ログを追加。java 119.16 MiB / 展開後 128.96 MiB、kotlin 121.30 MiB / 131.50 MiB、scala 118.67 MiB / **293.55 MiB**。scala は Lambda の展開後 250 MB 上限を超えるが、2026-11-08 10:47 の加藤さん裁定で **ESA JVM 系を 5 成果物に分割（5.2.0）** することになっており、scala の上限超過は ESA 5.2.0 の分割を待つ。レイヤー分割・依存除外はしない。
 - **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機。**この停止中の方針は acceptance-criteria §10.h（patch 自動マージ、minor/major 手動）より優先する。**
-- **M3 Kotlin**: **完了**。#1（骨格 + command、PR #4）、#2（Read API + RMU、PR #5）、#3（compose + e2e + CI、PR #6）、復旧 A 案（PR #8）、再同期順序（PR #11）、Lambda/SQS デプロイ資産（PR #12）、24 時間超停止の運用手順・アラート（PR #14）、Scan 中も購読を継続する修正（PR #16）。issue #1〜#3・#7・#9・#10・#13・#15 とマイルストーン、ハブ #4 はクローズ済み。
-- **M4 Scala**: **完了**。scala #5 / #6 / #7 に加え、復旧 A 案（PR #9）、再同期順序（PR #12）、Lambda/SQS デプロイ資産（PR #13）、障害注入 e2e（PR #15）。issue #8・#10・#11・#14 をクローズ済み。
+- **M3 Kotlin**: **完了**。#1（骨格 + command、PR #4）、#2（Read API + RMU、PR #5）、#3（compose + e2e + CI、PR #6）、復旧 A 案（PR #8）、再同期順序（PR #11）、Lambda/SQS デプロイ資産（PR #12）、24 時間超停止の運用手順・アラート（PR #14）、Scan 中も購読を継続する修正（PR #16）、Lambda サイズ計測（PR #18）。issue #1〜#3・#7・#9・#10・#13・#15・#17 とマイルストーン、ハブ #4 はクローズ済み。e2e のホストポート固定 bind の修正（issue #19 / PR #20）は CI 実行中。
+- **M4 Scala**: **完了**。scala #5 / #6 / #7 に加え、復旧 A 案（PR #9）、再同期順序（PR #12）、Lambda/SQS デプロイ資産（PR #13）、障害注入 e2e（PR #15）、BIGINT 化（PR #18）、Lambda サイズ計測（PR #19）。issue #8・#10・#11・#14・#16・#17 をクローズ済み。
 
 ## 2. マイルストーンと完了条件
 
@@ -66,12 +68,11 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 ### go `j5ik2o/cqrs-es-example-go`
 
-- open PR: 0（Renovate も 0）
-- open issue（今回の M1/M2 作業対象は 0）:
-  - #32 Windows 11/WSL2 support https://github.com/j5ik2o/cqrs-es-example-go/issues/32
-  - #29 Implement deployment to AWS https://github.com/j5ik2o/cqrs-es-example-go/issues/29
+- open PR: #690（#689 の後続改善）— CI 実行中
+- open issue:
+  - #689 [M2 後続] ローカル検証の後続改善（定期実行の再処理テスト等） https://github.com/j5ik2o/cqrs-es-example-go/issues/689 — PR #690 で対応中
   - #7 Dependency Dashboard https://github.com/j5ik2o/cqrs-es-example-go/issues/7
-- 補足: #666〜#671・#680・#682・#684・#672 は完了・クローズ済み。PR #675〜#679・#573・#681（復旧）・#683（本番適用資産）・#685（定期実行・件数上限・監視）・#686（staticcheck 整理）・#687（CI lint への staticcheck v0.8.2 追加）はマージ済み。M2 マイルストーンは closed。
+- 補足: #666〜#671・#680・#682・#684・#672・#29（ローカル検証）・#32（対象外）は完了・クローズ済み。PR #675〜#679・#573・#681（復旧）・#683（本番適用資産）・#685（定期実行・件数上限・監視）・#686（staticcheck 整理）・#687（CI lint への staticcheck v0.8.2 追加）・#688（ローカルコンテナ検証）はマージ済み。M2 マイルストーンは closed。
 
 ### java `j5ik2o/cqrs-es-example-java`
 
@@ -79,7 +80,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - #616 Spring Boot v4 https://github.com/j5ik2o/cqrs-es-example-java/pull/616
   - #608 java-jdk v25 https://github.com/j5ik2o/cqrs-es-example-java/pull/608
   - #559 Gradle 9（close 候補） https://github.com/j5ik2o/cqrs-es-example-java/pull/559
-- マージ済み（M2）: #618（ESA v5.1.0 / 3 テーブル）、#619（Write API）、#620（Read API）、#621（RMU head Streams）、#622（e2e）、#624（復旧 A 案）、#626（Lambda/SQS デプロイ資産）、#629（Lambda 配布物・Secrets Manager・監視、`3b31c755`）。issue #583〜#587・#623・#625・#627 はクローズ済み。
+- マージ済み（M2）: #618（ESA v5.1.0 / 3 テーブル）、#619（Write API）、#620（Read API）、#621（RMU head Streams）、#622（e2e）、#624（復旧 A 案）、#626（Lambda/SQS デプロイ資産）、#629（Lambda 配布物・Secrets Manager・監視、`3b31c755`）、#631（Lambda サイズ計測、`2a0d1447`）。issue #583〜#587・#623・#625・#627・#630 はクローズ済み。
 - open issue:
   - #588 [M2] Renovate PR を整理 https://github.com/j5ik2o/cqrs-es-example-java/issues/588 — **Renovate 停止方針で保留**
 
@@ -89,7 +90,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - #819 functions-framework v5 https://github.com/j5ik2o/cqrs-es-example-js/pull/819
   - #812 @types/node https://github.com/j5ik2o/cqrs-es-example-js/pull/812
   - #811 yargs v18 https://github.com/j5ik2o/cqrs-es-example-js/pull/811
-- マージ済み（M2）: #831（ESA v5.2.0）、#832（Write API）、#833（Read API）、#834（RMU head Streams）、#835（e2e）、#837（復旧 A 案）、#839（payload 復号失敗の DLQ と SQS 通知）、#841（Lambda 起動時 Scan・DLQ バッチ・SQS 消費側、`2288a2f8`）。issue #825〜#829・#836・#838・#840 はクローズ済み。
+- マージ済み（M2）: #831（ESA v5.2.0）、#832（Write API）、#833（Read API）、#834（RMU head Streams）、#835（e2e）、#837（復旧 A 案）、#839（payload 復号失敗の DLQ と SQS 通知）、#841（Lambda 起動時 Scan・DLQ バッチ・SQS 消費側、`2288a2f8`）、#843（BIGINT 化・T-9、`6dadc460`）。issue #825〜#829・#836・#838・#840・#842 はクローズ済み。
 - open issue:
   - #830 [M2] Renovate 整理 https://github.com/j5ik2o/cqrs-es-example-js/issues/830 — **Renovate 停止方針で保留**
 
@@ -107,24 +108,26 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 ### scala `j5ik2o/cqrs-es-example-scala`
 
-- open PR: 0（#15 はマージ済み）
+- open PR: 0
 - open issue: 0
-- マージ済み: #5（Write API）、#6（Read API / RMU）、#7（head Streams / e2e）、#9（復旧 A 案、`03d1951a`）、#12（再同期順序、`cdcf400e`）、#13（Lambda/SQS デプロイ資産、`8640751a`）、#15（障害注入 e2e、`550de5d0`）。issue #2〜#4・#8・#10・#11・#14 はクローズ済み。
-- 残作業: 実 AWS デプロイ、`last_processed_sequence_number` の bigint 化判断。
+- マージ済み: #5（Write API）、#6（Read API / RMU）、#7（head Streams / e2e）、#9（復旧 A 案、`03d1951a`）、#12（再同期順序、`cdcf400e`）、#13（Lambda/SQS デプロイ資産、`8640751a`）、#15（障害注入 e2e、`550de5d0`）、#18（BIGINT 化、`820fa1d9`）、#19（Lambda サイズ計測、`d54bb4a8`）。issue #2〜#4・#8・#10・#11・#14・#16・#17 はクローズ済み。
+- 残作業: 実 AWS デプロイ。Lambda 配布物は展開後 293.55 MiB で 250 MB 上限を超えるが、ESA JVM 系の 5 成果物分割（5.2.0、2026-11-08 10:47 加藤さん裁定）を待つ。レイヤー分割・依存除外はしない。
 - M4 マイルストーン: closed。
 
 ### kotlin `j5ik2o/cqrs-es-example-kotlin`
 
-- open PR: 0
-- open issue: 0
-- マージ済み: #4（骨格 + command + Write API、`f2564d72`）、#5（Read API + RMU、`461c6171`）、#6（compose + e2e + CI、`ea55da91`）、#8（復旧 A 案、`2ca6158b`）、#11（再同期順序、`5272c5c1`）、#12（Lambda/SQS デプロイ資産、`ac3ec0d7`）、#14（24 時間超停止の運用手順・アラート、`f1925bf8`）、#16（Scan 中も購読を継続、`9200537a`）。issue #1〜#3・#7・#9・#10・#13・#15 はクローズ済み。
+- open PR: #20（e2e のホストポート固定 bind 修正）— CI 実行中
+- open issue:
+  - #19 [M3 後続] e2e のホストポート固定バインドをやめる https://github.com/j5ik2o/cqrs-es-example-kotlin/issues/19 — PR #20 で対応中
+- マージ済み: #4（骨格 + command + Write API、`f2564d72`）、#5（Read API + RMU、`461c6171`）、#6（compose + e2e + CI、`ea55da91`）、#8（復旧 A 案、`2ca6158b`）、#11（再同期順序、`5272c5c1`）、#12（Lambda/SQS デプロイ資産、`ac3ec0d7`）、#14（24 時間超停止の運用手順・アラート、`f1925bf8`）、#16（Scan 中も購読を継続、`9200537a`）、#18（Lambda サイズ計測、`fc279e74`）。issue #1〜#3・#7・#9・#10・#13・#15・#17 はクローズ済み。
 - M3 マイルストーン: closed。
-- 残作業: 実 AWS デプロイとアラーム通知先、MySQL 認証情報のローテーション手順、配布物 138MB のレイヤー分割検討。
+- 残作業: 実 AWS デプロイとアラーム通知先、MySQL 認証情報のローテーション手順。配布物は展開後 131.50 MiB で上限内のため、レイヤー分割は不要。
 
 ## 4. 作業中の Orca 端末・worktree・担当 issue
 
-- **稼働中の実装作業者はいない**。実装系の open PR（Renovate 除く）は全 repo で 0。
-- scala #14（PR #15）と kotlin #15（PR #16）はマージ済みで、worktree は削除・端末もクローズ済み。
+- **go #689（PR #690）**: worktree `m2-go-688-followup` / terminal `term_ec3f76b2-ad3e-47bd-ae81-a8a60e721e80` / task `task_7676049216d7`。
+- **kotlin #19（PR #20）**: worktree `m3-kotlin-e2e-ports` / terminal `term_89ddb327-9688-4119-b249-d0cffb9b4fa6` / task `task_5b01a6d42656`。
+- 上記 2 本以外に実装系の open PR（Renovate 除く）はない。
 - go #687（PR #687）、kotlin #10（PR #12）、scala #11（PR #13）、go #672（PR #686）、kotlin #9（PR #11）、scala #10（PR #12）、rs #604（PR #605）、js #840（PR #841）、kotlin #7（PR #8）、java #627（PR #629）、go #684（PR #685）、scala #8（PR #9）、kotlin #13（PR #14）はすべてマージ済みで、各 worktree は削除済み。リモート枝は残す。
 - Renovate PR は停止方針により触らない。
 - 完了済み worker の端末は指示により close せず orphaned のまま: `term_18bfc47d`（go #667）、`term_dd421d56`（go #668）、`term_7d24356a`（go #669）、`term_313c97bc`（go #679）、`term_ea435055`（go #671）、`term_df43c75b`（go #573）、`term_f28d70c0`（scala #7）、`term_21227747`（scala #3 検証）、`term_22ca3215`（java #614）、`term_20839d9c`（js #823）。
@@ -140,8 +143,9 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - 復旧の設計論点（リトライ上限、DLQ、24 時間超停止後の再同期）は **2026-11-07 23:37 に A 案で確定**。go / java / js / rs / kotlin / scala のすべてで実装・マージ済み。**kotlin / scala のローカル reader の再同期順序（購読再開→並行 Scan）も PR #11 / #12 で修正済み**。
 - **kotlin の Scan 中の購読**: 2026-11-07 23:37 確定の A 案（購読を再開したまま並行 Scan → journal から欠番補完）で決着済み。PR #16 で「Scan 中も購読を継続する」形に修正済み。長時間の Scan 中も読み取りを続け、失敗時はバックオフして再開する。
 - **js #840 の Lambda 起動時 Scan** は PR #841 で実装済み。M2 の完了条件を満たす。
-- **scala の DY-15 再同期** は PR #9、順序修正は PR #12 で実装済み。残るのは Lambda/SQS デプロイ資産（#11）と障害注入 e2e。
-- **go の CI に staticcheck を追加するか** は加藤さんの判断待ち。決まるまで着手しない。
+- **scala の DY-15 再同期** は PR #9、順序修正は PR #12 で実装済み。Lambda/SQS デプロイ資産（#11）と障害注入 e2e（#14）も完了。
+- **scala の Lambda 配布物サイズ**: 展開後 293.55 MiB で Lambda の 250 MB 上限を超える。2026-11-08 10:47 の加藤さん裁定で **ESA JVM 系を 5 成果物に分割（5.2.0）** することになっており、scala は ESA 5.2.0 の分割を待つ。レイヤー分割・依存除外はしない。
+- **go の CI の staticcheck**: 2026-11-08 07:56 に加藤さんが決定済み（v0.8.2 固定、既存 lint ジョブに追加、別ジョブにしない）。PR #687 で実装済みで、go の main の lint ジョブに staticcheck のインストールと実行があることを確認済み。
 
 ## 6. 加藤さんの決定・禁止事項
 
@@ -168,11 +172,11 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 ## 7. 次にやること
 
-1. **M2 / M3 / M4 の実装**: 全言語で完了。kotlin #10 / scala #11 の Lambda/SQS デプロイ資産も完了。
-2. **本番運用の後続**: 実 AWS デプロイ、Secrets Manager、SNS / アラーム通知先の設定、MySQL 認証情報のローテーション、配布物サイズの最適化（HAND_OFF の各 repo 節を参照）。
-3. **Renovate 整理 issue**（java #588 / js #830 / rs #551）は停止方針で保留。
-4. **HAND_OFF**: 最長 1 時間おき、およびマイルストーン完了・方針変更時に更新。
-5. **Renovate**: 停止中。既存 PR は触らず、Grok Bot のマージ判断のみ待つ。
+1. **go #690 / kotlin #20**: CI と未解決レビューコメントを確認し、Grok Bot のマージ判断を待つ。
+2. **M2 / M3 / M4 の実装**: 全言語で完了。Lambda/SQS デプロイ資産・BIGINT 化・サイズ計測も完了。
+3. **判断待ち**: 実 AWS デプロイ、Secrets Manager、SNS / アラーム通知先。scala の 293.55 MiB 超過は ESA JVM 系 5 成果物分割（5.2.0）待ちで、レイヤー分割・依存除外はしない。
+4. **Renovate 整理 issue**（java #588 / js #830 / rs #551）は停止方針で保留。
+5. **現在は停止中**: §9 の再開手順に従う。
 
 ## 8. 参照
 
@@ -180,6 +184,36 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - 受け入れ基準: https://github.com/j5ik2o/cqrs-es-example/blob/main/docs/acceptance-criteria.md
 - ESA v5 DynamoDB 仕様: https://github.com/j5ik2o/event-store-adapter/blob/main/docs/spec/storage/dynamodb.ja.md
 - ADR-0002: https://github.com/j5ik2o/event-store-adapter/blob/main/docs/adr/0002-separate-aggregate-head-from-snapshot.md
+
+## 9. 停止中（2026-11-08 12:01 加藤さん指示）
+
+**理由**: ひと段落したら HAND_OFF を書いて止まる。新しい issue には着手しない。開いている PR は CI と未対応コメントが片づくまで仕上げ、マージは Grok Bot が行う。作業者は起動せず、新しい指示があるまで待機する。
+
+### repo ごとの状態
+
+| repo | 実装 PR | 主な残り | main CI |
+|---|---|---|---|
+| go | #690（#689 後続改善、CI 実行中） | #689（PR #690 で対応中）、#7 | 緑 |
+| java | なし（Renovate 3 本のみ） | #588（Renovate 整理、保留） | 緑 |
+| js | なし（Renovate 3 本のみ） | #830（Renovate 整理、保留） | 緑 |
+| rs | なし（Renovate 5 本のみ） | #551（Renovate 整理、保留） | 緑 |
+| scala | なし | なし。Lambda 展開後 293.55 MiB は ESA JVM 系 5 成果物分割（5.2.0）待ち | 緑 |
+| kotlin | #20（#19 e2e ポート修正、CI 実行中） | #19（PR #20 で対応中） | 緑（再実行で成功） |
+| hub | なし | #3（M2 追跡、Renovate 保留の記録） | 対象外 |
+
+### 残りの issue
+
+- go #689: ローカル検証の後続改善（PR #690）
+- kotlin #19: e2e のホストポート固定 bind 修正（PR #20）
+- go #7 / java #588 / js #830 / rs #551: Renovate 関連（停止方針で保留）
+- hub #3: M2 追跡（Renovate 整理 issue が保留のため残す）
+
+### 再開手順
+
+1. `go #690` と `kotlin #20` の CI・未解決レビューコメントを確認する。全緑・未解決 0 なら Grok Bot がマージする。
+2. マージ後に各 issue（#689 / #19）をクローズし、worktree `m2-go-688-followup` / `m3-kotlin-e2e-ports` を、未コミット・未プッシュなしを確認してローカル破棄する（リモート枝は残す）。
+3. 判断待ち（実 AWS デプロイ・Secrets Manager・SNS 通知先、Renovate 整理）は加藤さんの指示があるまで着手しない。scala の 293.55 MiB 超過は ESA 5.2.0 の 5 成果物分割待ちで、レイヤー分割・依存除外はしない。
+4. 作業者は起動しない。Renovate PR は触らない。
 
 ## 更新履歴
 
@@ -201,3 +235,5 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - 2026-11-08 09:10 JST: kotlin の Scan 中の購読停止は判断待ちではなく、A 案（購読再開→並行 Scan→journal 補完）で決着済みとして記述を修正。issue #15 で Scan 中も購読を継続する修正を行うことを明記。
 - 2026-11-08 09:25 JST: kotlin #14（24h 超停止の運用手順・アラート、`f1925bf8`）のマージを反映。kotlin #15 と scala #14（障害注入 e2e / PR #15）を進行中として記録。
 - 2026-11-08 09:40 JST: scala #15（障害注入 e2e、`550de5d0`）と kotlin #16（Scan 中も購読を継続、`9200537a`）のマージを反映。issue #14 / #15 クローズ、全実装 worktree を削除・端末もクローズ。着手可能な非デプロイ issue は残っていない。
+- 2026-11-08 12:05 JST: 加藤さん指示（12:01）により停止。js #843 / scala #18 の BIGINT 化、java #631 / kotlin #18 / scala #19 の Lambda サイズ計測、go #688 のローカル検証、kotlin #14 / #16 を反映。go #29 / #32 はクローズ。go #690（#689）と kotlin #20（#19）を CI 実行中として記録し、§9 に停止理由・repo 状態・残 issue・再開手順を追加。
+- 2026-11-08 12:10 JST: 記述訂正。go の staticcheck は 07:56 に決定済み・PR #687 で実装済み（v0.8.2、既存 lint ジョブ）。scala の 293.55 MiB 超過は未決定ではなく、10:47 の加藤さん裁定で ESA JVM 系 5 成果物分割（5.2.0）を待つ扱い。レイヤー分割・依存除外はしない。
