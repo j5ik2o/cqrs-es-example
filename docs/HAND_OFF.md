@@ -1,6 +1,6 @@
 # cqrs-es-example 群 引継ぎ（HAND_OFF）
 
-最終更新: **2026-11-08 09:25 JST**
+最終更新: **2026-11-08 09:40 JST**
 更新担当: cqrs-es coordinator（Orca）
 この文書は、担当者がコンテキストやレート制限で交代しても、次の担当がこの 1 枚で引き継げるようにするためのものです。実装の詳細は各 repo の issue / PR と `docs/acceptance-criteria.md` を参照してください。
 
@@ -18,8 +18,8 @@
 - **M2 復旧（A 案）**: 2026-11-07 23:37 加藤さん決定。M2 を「head Streams 移行」と「復旧（再試行・DLQ・再同期）」に分離し、復旧を言語ごとの issue で実装した。追跡のハブ #13 は全言語完了でクローズ済み。go #680 / java #623 / js #836 / rs #600 / kotlin #7 / scala #8 はすべてクローズ済み。
 - **M2 後続（本番適用・堅牢化）**: go #684 / java #627 / js #840 / rs #604 / go #672（staticcheck）/ kotlin #10 / scala #11 はすべて PR マージ済みでクローズ。**実装系の残作業はない**。実 AWS デプロイ、Secrets Manager、SNS 通知先、アラート通知先などの運用設定のみが残る（本番デプロイはオーナー承認が必要）。go の CI lint への staticcheck 追加は加藤さん決定（v0.8.2 固定）に沿って PR #687 で完了。
 - **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機。**この停止中の方針は acceptance-criteria §10.h（patch 自動マージ、minor/major 手動）より優先する。**
-- **M3 Kotlin**: **完了**。#1（骨格 + command、PR #4）、#2（Read API + RMU、PR #5）、#3（compose + e2e + CI、PR #6）、復旧 A 案（PR #8）、再同期順序（PR #11）、Lambda/SQS デプロイ資産（PR #12）、24 時間超停止の運用手順・アラート（PR #14）。issue #1〜#3・#7・#9・#10・#13 とマイルストーン、ハブ #4 はクローズ済み。Scan 中も購読を継続する修正（#15）は進行中。
-- **M4 Scala**: **完了**。scala #5 / #6 / #7 に加え、復旧 A 案（PR #9）、再同期順序（PR #12）、Lambda/SQS デプロイ資産（PR #13）。issue #8・#10・#11 をクローズ済み。
+- **M3 Kotlin**: **完了**。#1（骨格 + command、PR #4）、#2（Read API + RMU、PR #5）、#3（compose + e2e + CI、PR #6）、復旧 A 案（PR #8）、再同期順序（PR #11）、Lambda/SQS デプロイ資産（PR #12）、24 時間超停止の運用手順・アラート（PR #14）、Scan 中も購読を継続する修正（PR #16）。issue #1〜#3・#7・#9・#10・#13・#15 とマイルストーン、ハブ #4 はクローズ済み。
+- **M4 Scala**: **完了**。scala #5 / #6 / #7 に加え、復旧 A 案（PR #9）、再同期順序（PR #12）、Lambda/SQS デプロイ資産（PR #13）、障害注入 e2e（PR #15）。issue #8・#10・#11・#14 をクローズ済み。
 
 ## 2. マイルストーンと完了条件
 
@@ -107,24 +107,24 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 
 ### scala `j5ik2o/cqrs-es-example-scala`
 
-- open PR: #15（障害注入 e2e）— **作業中・PR #15**
-- open issue: #14（障害注入 e2e）
-- マージ済み: #5（Write API）、#6（Read API / RMU）、#7（head Streams / e2e）、#9（復旧 A 案、`03d1951a`）、#12（再同期順序、`cdcf400e`）、#13（Lambda/SQS デプロイ資産、`8640751a`）。issue #2〜#4・#8・#10・#11 はクローズ済み。
-- 残作業: 障害注入 e2e（#14）、実 AWS デプロイ、`last_processed_sequence_number` の bigint 化判断。
+- open PR: 0（#15 はマージ済み）
+- open issue: 0
+- マージ済み: #5（Write API）、#6（Read API / RMU）、#7（head Streams / e2e）、#9（復旧 A 案、`03d1951a`）、#12（再同期順序、`cdcf400e`）、#13（Lambda/SQS デプロイ資産、`8640751a`）、#15（障害注入 e2e、`550de5d0`）。issue #2〜#4・#8・#10・#11・#14 はクローズ済み。
+- 残作業: 実 AWS デプロイ、`last_processed_sequence_number` の bigint 化判断。
 - M4 マイルストーン: closed。
 
 ### kotlin `j5ik2o/cqrs-es-example-kotlin`
 
 - open PR: 0
-- open issue: #15（Scan 中も Streams の購読を継続）— **作業中**
-- マージ済み: #4（骨格 + command + Write API、`f2564d72`）、#5（Read API + RMU、`461c6171`）、#6（compose + e2e + CI、`ea55da91`）、#8（復旧 A 案、`2ca6158b`）、#11（再同期順序、`5272c5c1`）、#12（Lambda/SQS デプロイ資産、`ac3ec0d7`）、#14（24 時間超停止の運用手順・アラート、`f1925bf8`）。issue #1〜#3・#7・#9・#10・#13 はクローズ済み。
+- open issue: 0
+- マージ済み: #4（骨格 + command + Write API、`f2564d72`）、#5（Read API + RMU、`461c6171`）、#6（compose + e2e + CI、`ea55da91`）、#8（復旧 A 案、`2ca6158b`）、#11（再同期順序、`5272c5c1`）、#12（Lambda/SQS デプロイ資産、`ac3ec0d7`）、#14（24 時間超停止の運用手順・アラート、`f1925bf8`）、#16（Scan 中も購読を継続、`9200537a`）。issue #1〜#3・#7・#9・#10・#13・#15 はクローズ済み。
 - M3 マイルストーン: closed。
-- 残作業: Scan 中も Streams の購読を継続する修正（#15、A 案）、実 AWS デプロイとアラーム通知先、MySQL 認証情報のローテーション手順、配布物 138MB のレイヤー分割検討。
+- 残作業: 実 AWS デプロイとアラーム通知先、MySQL 認証情報のローテーション手順、配布物 138MB のレイヤー分割検討。
 
 ## 4. 作業中の Orca 端末・worktree・担当 issue
 
-- **scala #14（障害注入 e2e）**: worktree `m4-scala-fault-e2e` / terminal `term_604fcba4-bc2c-4310-a0e7-284f5e97c8ef` / PR #15（CI 実行中、未解決 0）。
-- **kotlin #15（Scan 中も購読を継続）**: worktree `m3-kotlin-ops-alerts`（branch `m3-kotlin-scan-subscription`）/ terminal `term_a1bd335a-2e06-4c02-9fc8-3291f385003e` / PR 作成待ち。
+- **稼働中の実装作業者はいない**。実装系の open PR（Renovate 除く）は全 repo で 0。
+- scala #14（PR #15）と kotlin #15（PR #16）はマージ済みで、worktree は削除・端末もクローズ済み。
 - go #687（PR #687）、kotlin #10（PR #12）、scala #11（PR #13）、go #672（PR #686）、kotlin #9（PR #11）、scala #10（PR #12）、rs #604（PR #605）、js #840（PR #841）、kotlin #7（PR #8）、java #627（PR #629）、go #684（PR #685）、scala #8（PR #9）、kotlin #13（PR #14）はすべてマージ済みで、各 worktree は削除済み。リモート枝は残す。
 - Renovate PR は停止方針により触らない。
 - 完了済み worker の端末は指示により close せず orphaned のまま: `term_18bfc47d`（go #667）、`term_dd421d56`（go #668）、`term_7d24356a`（go #669）、`term_313c97bc`（go #679）、`term_ea435055`（go #671）、`term_df43c75b`（go #573）、`term_f28d70c0`（scala #7）、`term_21227747`（scala #3 検証）、`term_22ca3215`（java #614）、`term_20839d9c`（js #823）。
@@ -138,7 +138,7 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
   - js #819 / #812 / #811
 - 設計判断 a〜k（M0）は **2026-11-06 に加藤さんが推奨どおり確定**。`docs/acceptance-criteria.md` §10 は「判断待ち」として列挙しているが、内容は確定済みとして読む。確定の記録はハブ issue #1 のコメントを参照: https://github.com/j5ik2o/cqrs-es-example/issues/1
 - 復旧の設計論点（リトライ上限、DLQ、24 時間超停止後の再同期）は **2026-11-07 23:37 に A 案で確定**。go / java / js / rs / kotlin / scala のすべてで実装・マージ済み。**kotlin / scala のローカル reader の再同期順序（購読再開→並行 Scan）も PR #11 / #12 で修正済み**。
-- **kotlin の Scan 中の購読**: 2026-11-07 23:37 確定の A 案（購読を再開したまま並行 Scan → journal から欠番補完）で決着済み。判断待ちではない。issue #15 で「Scan 中も購読を継続する」形に修正中。長時間の Scan 中も読み取りを続け、失敗時はバックオフして再開する。
+- **kotlin の Scan 中の購読**: 2026-11-07 23:37 確定の A 案（購読を再開したまま並行 Scan → journal から欠番補完）で決着済み。PR #16 で「Scan 中も購読を継続する」形に修正済み。長時間の Scan 中も読み取りを続け、失敗時はバックオフして再開する。
 - **js #840 の Lambda 起動時 Scan** は PR #841 で実装済み。M2 の完了条件を満たす。
 - **scala の DY-15 再同期** は PR #9、順序修正は PR #12 で実装済み。残るのは Lambda/SQS デプロイ資産（#11）と障害注入 e2e。
 - **go の CI に staticcheck を追加するか** は加藤さんの判断待ち。決まるまで着手しない。
@@ -200,3 +200,4 @@ ESA v5 への依存更新 PR をマージしただけでは M2 完了としな�
 - 2026-11-08 08:45 JST: go #687（CI staticcheck）、scala #13（デプロイ資産）、hub #17、kotlin #12（デプロイ資産）のマージを反映。kotlin #10 / scala #11 はクローズ済み。実装系の残作業はなく、残るのは本番デプロイ・Secrets・通知先などの運用設定。全実装 worktree を削除済み。
 - 2026-11-08 09:10 JST: kotlin の Scan 中の購読停止は判断待ちではなく、A 案（購読再開→並行 Scan→journal 補完）で決着済みとして記述を修正。issue #15 で Scan 中も購読を継続する修正を行うことを明記。
 - 2026-11-08 09:25 JST: kotlin #14（24h 超停止の運用手順・アラート、`f1925bf8`）のマージを反映。kotlin #15 と scala #14（障害注入 e2e / PR #15）を進行中として記録。
+- 2026-11-08 09:40 JST: scala #15（障害注入 e2e、`550de5d0`）と kotlin #16（Scan 中も購読を継続、`9200537a`）のマージを反映。issue #14 / #15 クローズ、全実装 worktree を削除・端末もクローズ。着手可能な非デプロイ issue は残っていない。
