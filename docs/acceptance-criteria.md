@@ -4,6 +4,14 @@
 
 この文書には 2 種類の記述がある。決定済みの要件と、判断待ちの設計判断である。判断待ちの項目は §10 に集め、選択肢・制約・影響・推奨だけを書く。この文書では決めない。決定は加藤さんまたはアーキテクトが行う。
 
+## 対象範囲の確定（2026-11-09）
+
+ユーザー指示により、ゴールは全6言語がローカルの Docker Compose と LocalStack で稼働し、Write API、RMU、Read API を通した e2e が成功することとする。実 AWS へのデプロイ、Secrets Manager・SNS・アラーム通知先の設定、Lambda 配布物サイズへの適合、公開・リリースは完成条件に含めない。Scala のローカル稼働に ESA の成果物分割を待つ必要はない。
+
+以下にある「現在」「現行」の実装状況は基準日 2026-11-06 の記録である。実装の SSoT は各 repo の git 履歴とコードとし、確認コミットと CI 実行の索引は [HAND_OFF.md](HAND_OFF.md) を参照する。
+
+このゴールは §8.1 のうち「`docker compose` と LocalStack で Write、RMU、Read の順に確認する e2e が成功する」を6言語で満たすことまでを指す。§8.1 の残りの項目、とくに main と Pull Request の CI 3ジョブの必須化、README と `docs/` の整備、Renovate の整理は、このゴールの達成だけでは満たされない。§8.1 は各言語の完了条件として残る。
+
 ## 用語
 
 | 用語 | 意味 |
@@ -334,14 +342,17 @@ main ブランチと Pull Request の両方で、次のジョブを必須にす�
 
 検査を無効にしたり、失敗を無視したりして緑にしない。e2e はビルドしたイメージと LocalStack を使い、実際の Write から Read までを通す。
 
+2026-11-09 時点の必須チェックの設定状況は、[HAND_OFF.md の「残る確認と差分」](HAND_OFF.md#残る確認と差分) に記す。
+
 ### 7.5 現行 e2e の差
 
-現行の e2e には次の差がある。M2 以降でそろえる。
+2026-11-09 に固定コミットで確認した現状は次のとおり。
 
-- LocalStack のバージョンが Rust は 2.1.0、Go・Java・JS は 2.3.2 である。
-- Go、Java、Rust の検証スクリプトは `sleep 1` の後に 1 回だけ読み、リトライしない。JS は最大 90 回、2 秒間隔でポーリングする。
-- Java の e2e compose は `WRITE_API_SERVER_BASE_URL` を `http://write-api-server-1:8080` に上書きする。Java の GraphQL パスは `/graphql` なので、スクリプトの既定値 `http://localhost:58080/graphql` と食い違う。
-- Java の e2e は `editMessage` の検証をコメントアウトしている。Java の Write スキーマに `editMessage` がないためである。
+- LocalStack は Java が 4.14.0、他の5言語が 2.3.2 である。Rust 2.1.0 の差は解消済み。
+- 6言語すべての検証スクリプトが、期限付きのポーリングでリードモデルの反映を待つ。固定の `sleep` の後に 1 回だけ読む実装は残っていない。
+- Java の e2e compose は `WRITE_API_SERVER_BASE_URL` と `READ_API_SERVER_BASE_URL` を、内部サービスの URL に `/graphql` を付けて上書きする。検証スクリプトの既定値と揃っており、実行に支障はない。
+- Java の e2e は `editMessage` を検証する。Java の Write スキーマに `editMessage` がある。
+- JS は Lambda 版 RMU のビルドとデプロイ用スクリプトを持つが、Compose e2e はコンテナ版 RMU を使う。LocalStack 上の Lambda 実行は e2e の対象外。
 - JS は Lambda 版 RMU も起動できる。LocalStack の Lambda 実行環境に依存する。
 
 ## 8. 各言語の完了条件
