@@ -342,18 +342,17 @@ main ブランチと Pull Request の両方で、次のジョブを必須にす�
 
 検査を無効にしたり、失敗を無視したりして緑にしない。e2e はビルドしたイメージと LocalStack を使い、実際の Write から Read までを通す。
 
-2026-11-09 時点の必須チェックの設定状況は、[HAND_OFF.md の「残る確認と差分」](HAND_OFF.md#残る確認と差分) に記す。
+2026-11-09 に6 repo の main で `lint`・`test`・`e2e` を必須にした。go・java・rs は必須化の前提として CI の `paths-ignore` を外している。リポジトリごとの check 名は [HAND_OFF.md の「必須チェックの設定」](HAND_OFF.md#必須チェックの設定2026-11-09-追加) に記す。
 
 ### 7.5 現行 e2e の差
 
 2026-11-09 に固定コミットで確認した現状は次のとおり。
 
-- LocalStack は Java が 4.14.0、他の5言語が 2.3.2 である。Rust 2.1.0 の差は解消済み。
+- LocalStack は Java が 4.14.0、他の5言語が 2.3.2 である。Rust 2.1.0 の差は解消済み。揃えるには各 stack を v4 に移行する必要がある。go で試したところ、イメージだけの差し替えでは head テーブルのストリームを RMU が読めず e2e が落ちた。
 - 6言語すべての検証スクリプトが、期限付きのポーリングでリードモデルの反映を待つ。固定の `sleep` の後に 1 回だけ読む実装は残っていない。
 - Java の e2e compose は `WRITE_API_SERVER_BASE_URL` と `READ_API_SERVER_BASE_URL` を、内部サービスの URL に `/graphql` を付けて上書きする。検証スクリプトの既定値と揃っており、実行に支障はない。
 - Java の e2e は `editMessage` を検証する。Java の Write スキーマに `editMessage` がある。
 - JS は Lambda 版 RMU のビルドとデプロイ用スクリプトを持つが、Compose e2e はコンテナ版 RMU を使う。LocalStack 上の Lambda 実行は e2e の対象外。
-- JS は Lambda 版 RMU も起動できる。LocalStack の Lambda 実行環境に依存する。
 
 ## 8. 各言語の完了条件
 
