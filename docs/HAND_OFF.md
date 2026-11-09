@@ -2,6 +2,7 @@
 
 確認日時: 2026-11-09 15:45 JST
 ローカル e2e 実行: 2026-11-09 19:50〜20:05 JST
+必須チェックの設定: 2026-11-09 21:00〜23:00 JST
 対象: ハブと go / java / js / rs / scala / kotlin の6言語実装。
 
 ## ゴールと対象範囲
@@ -82,10 +83,27 @@ docker buildx inspect amd-arm
 
 各言語の e2e スクリプトは、固定のプロジェクト名（`cqrs-es-example-<lang>`）で `docker compose down -v --remove-orphans` を実行する。同じプロジェクト名の stack と MySQL のボリュームがあると、最初にそれらを削除する。worktree は Docker の資源を分離しないため、手元の開発用 stack と同じ Docker 環境で並行して動かさない。専用の Docker 環境で実行する。
 
+### 必須チェックの設定（2026-11-09 追加）
+
+[acceptance-criteria.md §7.4](acceptance-criteria.md#74-ci-で必須にするもの) に合わせて、6 repo の main で lint・test・e2e を必須チェックにした。go・java・rs の CI は `paths-ignore` を持っており、そのパスだけを触る Pull Request はチェックを1つも報告しない。必須チェックを先に入れるとそれらの PR が永久にマージできなくなるため、`paths-ignore` を外す PR を先に出してマージした。
+
+| repo | 変更 | マージコミット | 必須にした check |
+|---|---|---|---|
+| go | [#691](https://github.com/j5ik2o/cqrs-es-example-go/pull/691) | `dc2d979` | `lint`、`test`、`e2e` |
+| java | [#632](https://github.com/j5ik2o/cqrs-es-example-java/pull/632) | `5af6503` | `Run lint`、`Run tests with JDK 17`、`Run tests with JDK 25`、`e2e` |
+| js | 設定のみ | `2ecafa5` | `Run lint`、`test (20.x)`、`e2e (20.x)` |
+| rs | [#607](https://github.com/j5ik2o/cqrs-es-example-rs/pull/607) | `20ca43c` | `lint`、`test-infrastructure`、`test-command-domain`、`test-command-interface-adaptor-impl`、`test-command-processor`、`test-query-interface-adaptor`、`test-write-api-server`、`test-rmu`、`test-read-model-updater`、`test-read-api-server`、`e2e` |
+| scala | strict の有効化のみ | `d54bb4a` | `lint`、`test`、`e2e` |
+| kotlin | 設定のみ | `9668f02` | `Lint`、`Test`、`E2E` |
+
+java と kotlin は main が未保護だったので protection を新しく作った。6 repo とも strict を有効にしたため、PR は main に追従してからでないとマージできない。確認は `gh api repos/j5ik2o/<repo>/branches/main/protection` の `required_status_checks.contexts` で行い、go `dc2d979`、java `5af6503`、rs `20ca43c` は main への push でも3ジョブが緑になることを確かめた。
+
+この表のコミットは CI と保護設定だけの変更である。js・scala・kotlin はローカル e2e を実行した確認コミットと同じで、go・java・rs だけが異なる（ローカル e2e の確認コミットは `84968d9`、`8727cb6`、`538f2e8`）。コードへのリンクは引き続き上の表の確認コミットに固定している。
+
 ### 残る確認と差分
 
-- §7.4 の必須ジョブは未達。main の branch protection で必須になっているのは、go が `test`、js が `test (20.x)`、rs が `test-write-api-server`・`test-read-api-server`・`test-read-model-updater`、scala が `lint`・`test`・`e2e`。java と kotlin の main は保護されていない。`lint`・`test`・`e2e` を必須にする設定変更は、コードの変更ではなくリポジトリ設定の判断なので、今回は行っていない。
-- LocalStack のイメージは java が 4.14.0、他5言語が 2.3.2 である。§7.5 が挙げていた Rust 2.1.0 の差は解消済み。
+- §7.4 の必須ジョブは満たした。設定内容と根拠は前節に記す。
+- LocalStack のイメージは java が 4.14.0、他5言語が 2.3.2 のまま。4.14.0 に揃える試みは go で行い、取りやめた。go の Compose でイメージだけ上げると、head テーブルのストリームを RMU が `DescribeStream` できず（`ResourceNotFoundException`）、リードモデルに反映されなかった。`/tmp/localstack` の bind mount を残した場合は v4 が起動時にその領域を消すため `dynamodb-setup` が exit 255 で失敗する。バージョン統一はイメージの差し替えではなく各 stack の v4 移行なので、別作業にする。go の変更は戻した。
 - §7.5 のうち、1回だけ読む検証、Java の `editMessage` 未検証、Java の GraphQL パス食い違いは、現行コードでは解消済み。経緯は [acceptance-criteria.md §7.5](acceptance-criteria.md#75-現行-e2e-の差) に記す。
 - 受け入れ基準の §7 以外の全項目の再監査は未実施。
 
