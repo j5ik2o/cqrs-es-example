@@ -8,7 +8,7 @@
 
 ユーザー指示により、ゴールは全6言語がローカルの Docker Compose と LocalStack で稼働し、Write API、RMU、Read API を通した e2e が成功することとする。実 AWS へのデプロイ、Secrets Manager・SNS・アラーム通知先の設定、Lambda 配布物サイズへの適合、公開・リリースは完成条件に含めない。Scala のローカル稼働に ESA の成果物分割を待つ必要はない。
 
-以下にある「現在」「現行」の実装状況は基準日 2026-11-06 の記録である。実装の SSoT は各 repo の git 履歴とコードとし、確認コミットと CI 実行の索引は [HAND_OFF.md](HAND_OFF.md) を参照する。
+以下にある「現在」「現行」の実装状況は基準日 2026-11-06 の記録である。実装の SSoT は各 repo の git 履歴とコードとし、2026-11-09 時点の確認コミットと CI 実行の索引は、[削除前の HAND_OFF.md](https://github.com/j5ik2o/cqrs-es-example/blob/4e3d63799053e814fc445df9c3b7c12cfef58b38/docs/HAND_OFF.md) に残る。残作業は GitHub の issue とマイルストーンで管理する。
 
 このゴールは §8.1 のうち「`docker compose` と LocalStack で Write、RMU、Read の順に確認する e2e が成功する」を6言語で満たすことまでを指す。§8.1 の残りの項目、とくに main と Pull Request の CI 3ジョブの必須化、README と `docs/` の整備、Renovate の整理は、このゴールの達成だけでは満たされない。§8.1 は各言語の完了条件として残る。
 
@@ -342,7 +342,7 @@ main ブランチと Pull Request の両方で、次のジョブを必須にす�
 
 検査を無効にしたり、失敗を無視したりして緑にしない。e2e はビルドしたイメージと LocalStack を使い、実際の Write から Read までを通す。
 
-2026-11-09 に6 repo の main で `lint`・`test`・`e2e` を必須にした。go・java・rs は必須化の前提として CI の `paths-ignore` を外している。リポジトリごとの check 名は [HAND_OFF.md の「必須チェックの設定」](HAND_OFF.md#必須チェックの設定2026-11-09-追加) に記す。
+2026-11-09 に6 repo の main で `lint`・`test`・`e2e` を必須にした。go・java・rs は必須化の前提として CI の `paths-ignore` を外している。リポジトリごとの check 名は、各 repo の main のブランチ保護（`gh api repos/j5ik2o/<repo>/branches/main/protection`）で確かめる。2026-11-09 時点の一覧は [削除前の HAND_OFF.md の「必須チェックの設定」](https://github.com/j5ik2o/cqrs-es-example/blob/4e3d63799053e814fc445df9c3b7c12cfef58b38/docs/HAND_OFF.md#必須チェックの設定2026-11-09-追加) に残る。
 
 ### 7.5 現行 e2e の差
 
