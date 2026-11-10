@@ -12,6 +12,55 @@
 
 このゴールは §8.1 のうち「`docker compose` と LocalStack で Write、RMU、Read の順に確認する e2e が成功する」を6言語で満たすことまでを指す。§8.1 の残りの項目、とくに main と Pull Request の CI 3ジョブの必須化、README と `docs/` の整備、Renovate の整理は、このゴールの達成だけでは満たされない。§8.1 は各言語の完了条件として残る。
 
+## 作業上の制約
+
+この節は、削除した `docs/HAND_OFF.md` が引き継いでいた、加藤さんの決定と禁止事項を記す。作業者は、着手前にこの節を読む。出どころは次の 2 つである。
+
+- [削除前の HAND_OFF.md の「引き継ぐ作業制約」](https://github.com/j5ik2o/cqrs-es-example/blob/4e3d63799053e814fc445df9c3b7c12cfef58b38/docs/HAND_OFF.md#引き継ぐ作業制約)（2026-11-09 の版）
+- その節が参照する [旧版の HAND_OFF.md の §6「加藤さんの決定・禁止事項」](https://github.com/j5ik2o/cqrs-es-example/blob/a6abee66f69e043dac083ed6bbbde1492921e3c1/docs/HAND_OFF.md#6-加藤さんの決定禁止事項)（2026-11-08 の版）
+
+旧版の §6 の制約は、コードの変化だけで解除されたとは扱わない。対象範囲は「対象範囲の確定」の指示を優先し、旧版にあった実 AWS への適用と ESA の成果物分割待ちを、作業候補に戻さない。
+
+### Renovate は停止している
+
+- Renovate は、2026-11-07 19:33 の加藤さんの決定で停止している。理由は使用量の削減である。go、java、js、rs の `renovate.json` は `enabled: false` である。scala と kotlin に `renovate.json` はない（2026-11-10 に各リポジトリの main で確認した）。
+- 既存の Renovate の Pull Request は、修正しない、rebase しない、整理しない、クローズしない。WIP の上限の超過を解消する目的でも同じである。変更、整理、クローズには別の指示が要る。
+- 作業者を Renovate の Pull Request に着手させない。
+- 既存の Pull Request のマージ履歴から、停止の方針の全面解除を推定しない。
+- この停止の方針は、§10.h の推奨より優先する。§8.1 の「Renovate の Pull Request を整理し」の項目も、別の指示があるまで着手しない。
+
+旧版の §6 の文面は次のとおりである。
+
+> **Renovate は停止中（2026-11-07 19:33 加藤さん決定）**: 使用量削減のため Renovate は off。既存 Renovate PR の修正・リベース・整理・クローズは禁止（WIP 超過解消目的でも）。作業者を Renovate PR に着手させない。マージは Grok Bot が CI 全緑＋未対応コメントなしのものだけ行う。WIP 超過が Renovate だけなら新規着手せず待機する。**この停止中の方針は acceptance-criteria §10.h（patch 自動マージ、minor/major 手動）より優先する。**
+
+### 禁止事項
+
+次のことをしない。
+
+- `AGENTS.md` を編集する。
+- `docker prune` を実行する。
+- ほかの担当のコンテナ、イメージ、worktree、ターミナルを削除する。
+- 公開とリリースをする。
+- force push と rebase をする。ブランチの同期には、`git merge origin/main` か GitHub の Update branch を使う。
+- [j5ik2o/event-store-adapter の Pull Request #83](https://github.com/j5ik2o/event-store-adapter/pull/83) を再実装する。対象は共通リポジトリ `j5ik2o/event-store-adapter` の #83 だけで、go、java、js、rs の #83 ではない。この Pull Request は拒否済みで、再開しない。
+- ESA 本体のリポジトリ（`event-store-adapter-*`）を変更する。
+- main に直接 push する。変更は Pull Request を通す。
+
+マージの前に、CI と未解決のレビューを確認する。
+
+### 旧版の §6 から文面のまま移す項目
+
+次の項目は旧版の §6 にあり、2026-11-09 の版の「引き継ぐ作業制約」には個別に書かれていない。今も有効かどうかを、この文書では判断していない。加藤さんの決定の文面を変えないために、旧版の文面のまま引用する。
+
+> - **WIP は repo ごと**: 開いている PR は 1 repo 3 本まで（ドラフト含む）。作業者は 1 repo 1 本。repo が違えば並行可。**新規 PR を作る前に、その repo の open PR を 2 本以下にしておく**（3 本のまま新規 PR を出すと上限超過）。
+> - **Bugbot 確認必須**: Bugbot / CodeRabbit の未解決スレ・未対応コメントがある PR はマージしない。Codex の usage limit と CodeRabbit の rate-limit のコメントは指摘扱いしない。
+> - **M2 完了条件**: 上記 2 章の head Streams 条件と復旧 A 案を満たすこと。依存更新 PR のマージだけでは完了にしない。
+> - **close 候補は close しない**（加藤さんの判断待ち）。
+
+「上記 2 章」は、旧版の HAND_OFF.md の [§2「マイルストーンと完了条件」](https://github.com/j5ik2o/cqrs-es-example/blob/a6abee66f69e043dac083ed6bbbde1492921e3c1/docs/HAND_OFF.md#2-マイルストーンと完了条件) を指す。
+
+旧版の §6 の「HAND_OFF の運用」（HAND_OFF.md を更新する Pull Request の進め方）は、HAND_OFF.md を削除したので移していない。
+
 ## 用語
 
 | 用語 | 意味 |
@@ -375,6 +424,8 @@ main ブランチと Pull Request の両方で、次のジョブを必須にす�
 - [ ] README と `docs/` に、起動方法、ポート、環境変数、e2e の実行方法を書いている。
 - [ ] Renovate の Pull Request を整理し、未処理の更新を説明できる状態にしている。
 
+最後の項目（Renovate の Pull Request の整理）は、Renovate の停止の方針により、別の指示があるまで着手しない。[作業上の制約](#作業上の制約) を参照する。
+
 ### 8.2 言語ごとの範囲
 
 | リポジトリ | 主な作業 | 完了マイルストーン |
@@ -532,6 +583,8 @@ M4 で他言語と同じ形に作り直す。ESA-scala 5.1.0 は Scala 2.13.18 �
 ### 10.h Renovate の運用
 
 状態: 判断待ち
+
+Renovate は 2026-11-07 から停止している。停止の方針は、この項目の推奨より優先する。[作業上の制約](#作業上の制約) を参照する。
 
 選択肢は、patch と minor を自動マージする、すべて手動にする、ESA だけ手動にして他は自動にする、の 3 つである。
 
